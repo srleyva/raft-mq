@@ -1,0 +1,20 @@
+language: go
+sudo: required
+
+go:
+  - 1.12.5
+
+notifications:
+  on_success: never
+  on_failure: never
+
+before_install:
+  - make install-rocksdb-ull
+  - go get -u google.golang.org/grpc
+
+script:
+  - GO111MODULE=on make ci-quick-test
+  - GO111MODULE=on go test -tags "dragonboat_leveldb_test" -v -coverprofile=coverage.txt -covermode=atomic
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
