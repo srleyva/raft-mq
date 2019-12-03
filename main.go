@@ -15,8 +15,8 @@ import (
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
 
-	"github.com/srleyva/raft-group-mq/pkg/statemachine"
 	"github.com/srleyva/raft-group-mq/pkg/server"
+	"github.com/srleyva/raft-group-mq/pkg/statemachine"
 )
 
 // Default Ports
@@ -106,7 +106,9 @@ func main() {
 		clusterID++
 	}
 
-	server := server.NewServer(nodeAddr, clusters, nodeHost)
+	grpcAddr := fmt.Sprintf("%s:%d", addr, port+1)
+	log.Printf("GRPC Addr: %s", grpcAddr)
+	server := server.NewServer(grpcAddr, clusters, nodeHost)
 	if err := server.Start(); err != nil {
 		log.Fatalf("failed to start GRPC service: %s", err.Error())
 	}

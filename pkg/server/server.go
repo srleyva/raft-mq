@@ -17,13 +17,14 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/srleyva/raft-group-mq/pkg/message"
+	"github.com/srleyva/raft-group-mq/pkg/queue"
 )
 
 type Server struct {
 	nodehost *dragonboat.NodeHost
-	addr       string
-	ring 	   *consistent.Consistent
-	ln         net.Listener
+	addr     string
+	ring     *consistent.Consistent
+	ln       net.Listener
 }
 
 type ClusterID uint64
@@ -55,8 +56,8 @@ func NewServer(addr string, clusters []consistent.Member, nodehost *dragonboat.N
 	clusterRing := consistent.New(clusters, ringConfig)
 	return &Server{
 		nodehost: nodehost,
-		addr:       addr,
-		ring: clusterRing,
+		addr:     addr,
+		ring:     clusterRing,
 	}
 }
 
@@ -89,20 +90,18 @@ func (s *Server) Join(ctx context.Context, joinReq *message.JoinRequest) (*empty
 }
 
 func (s *Server) NewMessage(ctx context.Context, message *message.Message) (*empty.Empty, error) {
-	event := message.Event
-	topic := message.Topic
 	newMsg := &statemachine.Message{
-		Event: event,
-		Topic: topic,
+		Event: message.GetEvent(),
 	}
 
 	op := statemachine.Cmd{
+		Topic:   message.GetTopic(),
 		Op:      statemachine.ADD,
 		Message: newMsg,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	key := []byte(newMsg.Topic)
+	key := []byte(message.GetTopic())
 	clusterSession := s.nodehost.GetNoOPSession(s.ring.LocateKey(key).(ClusterID).Uint64())
 
 	var opbytes bytes.Buffer
@@ -121,20 +120,48 @@ func (s *Server) NewMessage(ctx context.Context, message *message.Message) (*emp
 	return &empty.Empty{}, nil
 }
 
-func (s *Server) ProccessMessage(ctx context.Context, _ *empty.Empty) (*message.Message, error) {
-	msg, err := s.messageBus.ProccessMessage()
+func (s *Server) ProccessMessage(ctx context.Context, msgReq *message.MessageRequest) (*message.Message, error) {
+	topic := msgReq.GetTopic()
+	op := statemachine.Cmd{
+		Topic: topic,
+		Op:    statemachine.POP,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	key := []byte(topic)
+	clusterSession := s.nodehost.GetNoOPSession(s.ring.LocateKey(key).(ClusterID).Uint64())
+	var opbytes bytes.Buffer
+	enc := gob.NewEncoder(&opbytes)
+	if err := enc.Encode(op); err != nil {
+		return nil, fmt.Errorf("err serializing data: %s", err)
+	}
+
+	result, err := s.nodehost.SyncPropose(ctx, clusterSession, opbytes.Bytes())
 	if err != nil {
 		return nil, err
 	}
+
 	return &message.Message{
-		Event: msg.String(),
+		Event: string(result.Data),
+		Topic: topic,
 	}, nil
+
 }
 
-func (s *Server) ListMessages(_ *empty.Empty, stream message.MessageBus_ListMessagesServer) error {
-	for _, item := range s.messageBus.ListMessages() {
+func (s *Server) ListMessages(msgReq *message.MessageRequest, stream message.MessageBus_ListMessagesServer) error {
+	topic := msgReq.GetTopic()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	key := []byte(topic)
+	clusterSession := s.nodehost.GetNoOPSession(s.ring.LocateKey(key).(ClusterID).Uint64())
+	topicQueue, err := s.nodehost.SyncRead(ctx, clusterSession.ClusterID, topic)
+	if err != nil {
+		return err
+	}
+	for _, item := range topicQueue.(*queue.Queue).ListItems() {
 		msg := &message.Message{
-			Event: item.(store.Message).String(),
+			Event: item.(*statemachine.Message).Event,
 		}
 		if err := stream.Send(msg); err != nil {
 			return err

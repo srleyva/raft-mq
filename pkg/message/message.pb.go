@@ -25,6 +25,45 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type MessageRequest struct {
+	Topic                string   `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *MessageRequest) Reset()         { *m = MessageRequest{} }
+func (m *MessageRequest) String() string { return proto.CompactTextString(m) }
+func (*MessageRequest) ProtoMessage()    {}
+func (*MessageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c8ed2b6d5563584b, []int{0}
+}
+
+func (m *MessageRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_MessageRequest.Unmarshal(m, b)
+}
+func (m *MessageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_MessageRequest.Marshal(b, m, deterministic)
+}
+func (m *MessageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MessageRequest.Merge(m, src)
+}
+func (m *MessageRequest) XXX_Size() int {
+	return xxx_messageInfo_MessageRequest.Size(m)
+}
+func (m *MessageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_MessageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MessageRequest proto.InternalMessageInfo
+
+func (m *MessageRequest) GetTopic() string {
+	if m != nil {
+		return m.Topic
+	}
+	return ""
+}
+
 type Message struct {
 	Event                string   `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
 	Topic                string   `protobuf:"bytes,2,opt,name=topic,proto3" json:"topic,omitempty"`
@@ -37,7 +76,7 @@ func (m *Message) Reset()         { *m = Message{} }
 func (m *Message) String() string { return proto.CompactTextString(m) }
 func (*Message) ProtoMessage()    {}
 func (*Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c8ed2b6d5563584b, []int{0}
+	return fileDescriptor_c8ed2b6d5563584b, []int{1}
 }
 
 func (m *Message) XXX_Unmarshal(b []byte) error {
@@ -84,7 +123,7 @@ func (m *JoinRequest) Reset()         { *m = JoinRequest{} }
 func (m *JoinRequest) String() string { return proto.CompactTextString(m) }
 func (*JoinRequest) ProtoMessage()    {}
 func (*JoinRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c8ed2b6d5563584b, []int{1}
+	return fileDescriptor_c8ed2b6d5563584b, []int{2}
 }
 
 func (m *JoinRequest) XXX_Unmarshal(b []byte) error {
@@ -120,6 +159,7 @@ func (m *JoinRequest) GetNodeID() string {
 }
 
 func init() {
+	proto.RegisterType((*MessageRequest)(nil), "MessageRequest")
 	proto.RegisterType((*Message)(nil), "Message")
 	proto.RegisterType((*JoinRequest)(nil), "JoinRequest")
 }
@@ -127,23 +167,23 @@ func init() {
 func init() { proto.RegisterFile("pkg/message/message.proto", fileDescriptor_c8ed2b6d5563584b) }
 
 var fileDescriptor_c8ed2b6d5563584b = []byte{
-	// 244 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x2c, 0xc8, 0x4e, 0xd7,
-	0xcf, 0x4d, 0x2d, 0x2e, 0x4e, 0x4c, 0x4f, 0x85, 0xd1, 0x7a, 0x05, 0x45, 0xf9, 0x25, 0xf9, 0x52,
-	0xd2, 0xe9, 0xf9, 0xf9, 0xe9, 0x39, 0xa9, 0xfa, 0x60, 0x5e, 0x52, 0x69, 0x9a, 0x7e, 0x6a, 0x6e,
-	0x41, 0x49, 0x25, 0x44, 0x52, 0xc9, 0x94, 0x8b, 0xdd, 0x17, 0xa2, 0x5a, 0x48, 0x84, 0x8b, 0x35,
-	0xb5, 0x2c, 0x35, 0xaf, 0x44, 0x82, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08, 0xc2, 0x01, 0x89, 0x96,
-	0xe4, 0x17, 0x64, 0x26, 0x4b, 0x30, 0x41, 0x44, 0xc1, 0x1c, 0x25, 0x47, 0x2e, 0x6e, 0xaf, 0xfc,
-	0xcc, 0xbc, 0xa0, 0xd4, 0xc2, 0xd2, 0xd4, 0xe2, 0x12, 0x21, 0x29, 0x2e, 0x8e, 0xa2, 0xc4, 0xb4,
-	0x12, 0xc7, 0x94, 0x94, 0x22, 0xa8, 0x3a, 0x38, 0x5f, 0x48, 0x8c, 0x8b, 0x2d, 0x2f, 0x3f, 0x25,
-	0xd5, 0xd3, 0x45, 0x82, 0x19, 0x2c, 0x03, 0xe5, 0x19, 0xdd, 0x66, 0xe4, 0xe2, 0x82, 0x5a, 0xed,
-	0x54, 0x5a, 0x2c, 0x64, 0xc0, 0xc5, 0xe5, 0x97, 0x5a, 0x0e, 0x73, 0x0b, 0x87, 0x1e, 0x94, 0x25,
-	0x25, 0xa6, 0x07, 0x71, 0xbe, 0x1e, 0xcc, 0xf9, 0x7a, 0xae, 0x20, 0xe7, 0x2b, 0x31, 0x08, 0x99,
-	0x72, 0xf1, 0x07, 0x14, 0xe5, 0x27, 0x27, 0xa7, 0x16, 0x17, 0xc3, 0xb4, 0xe1, 0x50, 0x2c, 0x05,
-	0x37, 0x4e, 0x89, 0x41, 0xc8, 0x84, 0x8b, 0xc7, 0x27, 0xb3, 0xb8, 0x04, 0x2a, 0x50, 0x4c, 0x8c,
-	0x1e, 0x03, 0x46, 0x21, 0x3d, 0x2e, 0x16, 0x90, 0x87, 0x85, 0x78, 0xf4, 0x90, 0xfc, 0x8d, 0xdb,
-	0x71, 0x49, 0x6c, 0x60, 0x11, 0x63, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x92, 0x75, 0x1b, 0x5e,
-	0x98, 0x01, 0x00, 0x00,
+	// 254 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x8f, 0x4b, 0x4e, 0xc3, 0x40,
+	0x0c, 0x86, 0x1b, 0x1e, 0xa5, 0x98, 0x8a, 0x4a, 0x23, 0x54, 0x95, 0xb0, 0x41, 0x59, 0x20, 0x36,
+	0x38, 0x15, 0x88, 0x03, 0x14, 0xc1, 0x02, 0x04, 0x08, 0xf5, 0x06, 0x6d, 0xe2, 0x46, 0x11, 0x34,
+	0x0e, 0xe3, 0x09, 0x88, 0x43, 0x72, 0x27, 0x94, 0x79, 0x94, 0xb2, 0xa0, 0xab, 0xe4, 0xb7, 0x3f,
+	0x7b, 0xfc, 0xc1, 0x71, 0xfd, 0x5a, 0xa4, 0x4b, 0x12, 0x99, 0x15, 0x14, 0xbe, 0x58, 0x6b, 0x36,
+	0x1c, 0x9f, 0x14, 0xcc, 0xc5, 0x1b, 0xa5, 0x36, 0xcd, 0x9b, 0x45, 0x4a, 0xcb, 0xda, 0x7c, 0xb9,
+	0x66, 0x72, 0x06, 0x87, 0x4f, 0x8e, 0x9e, 0xd2, 0x7b, 0x43, 0x62, 0xd4, 0x11, 0xec, 0x1a, 0xae,
+	0xcb, 0x6c, 0x14, 0x9d, 0x46, 0xe7, 0xfb, 0x53, 0x17, 0x92, 0x6b, 0xd8, 0xf3, 0x5c, 0x0b, 0xd0,
+	0x07, 0x55, 0x26, 0x00, 0x36, 0xfc, 0x8e, 0x6d, 0xad, 0x8f, 0x4d, 0xe0, 0xe0, 0x81, 0xcb, 0x2a,
+	0xec, 0x8e, 0xa1, 0xa7, 0x67, 0x0b, 0x33, 0xc9, 0x73, 0xed, 0xb9, 0x55, 0x56, 0x43, 0xe8, 0x56,
+	0x9c, 0xd3, 0xfd, 0xed, 0x68, 0xdb, 0x76, 0x7c, 0xba, 0xfc, 0x8e, 0x00, 0xfc, 0xd3, 0x37, 0x8d,
+	0xa8, 0x31, 0xc0, 0x33, 0x7d, 0x86, 0x5b, 0x7a, 0xe8, 0xff, 0xe2, 0x21, 0x3a, 0x4d, 0x0c, 0x9a,
+	0x78, 0xd7, 0x6a, 0x26, 0x1d, 0x85, 0x30, 0x78, 0xd1, 0x9c, 0x65, 0x24, 0x12, 0xc6, 0x06, 0xf8,
+	0x57, 0x3a, 0x5e, 0xed, 0x49, 0x3a, 0xea, 0x02, 0xfa, 0x8f, 0xa5, 0x18, 0x5f, 0x90, 0x8d, 0xf0,
+	0x38, 0x52, 0x08, 0x3b, 0xad, 0xa2, 0xea, 0xe3, 0x9a, 0xe9, 0xff, 0xe7, 0xcc, 0xbb, 0xb6, 0x72,
+	0xf5, 0x13, 0x00, 0x00, 0xff, 0xff, 0xe8, 0x42, 0xb0, 0xc4, 0xb2, 0x01, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -159,8 +199,8 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MessageBusClient interface {
 	NewMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*empty.Empty, error)
-	ProccessMessage(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Message, error)
-	ListMessages(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (MessageBus_ListMessagesClient, error)
+	ProccessMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*Message, error)
+	ListMessages(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (MessageBus_ListMessagesClient, error)
 	Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
@@ -181,7 +221,7 @@ func (c *messageBusClient) NewMessage(ctx context.Context, in *Message, opts ...
 	return out, nil
 }
 
-func (c *messageBusClient) ProccessMessage(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*Message, error) {
+func (c *messageBusClient) ProccessMessage(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (*Message, error) {
 	out := new(Message)
 	err := c.cc.Invoke(ctx, "/MessageBus/ProccessMessage", in, out, opts...)
 	if err != nil {
@@ -190,7 +230,7 @@ func (c *messageBusClient) ProccessMessage(ctx context.Context, in *empty.Empty,
 	return out, nil
 }
 
-func (c *messageBusClient) ListMessages(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (MessageBus_ListMessagesClient, error) {
+func (c *messageBusClient) ListMessages(ctx context.Context, in *MessageRequest, opts ...grpc.CallOption) (MessageBus_ListMessagesClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_MessageBus_serviceDesc.Streams[0], "/MessageBus/ListMessages", opts...)
 	if err != nil {
 		return nil, err
@@ -234,8 +274,8 @@ func (c *messageBusClient) Join(ctx context.Context, in *JoinRequest, opts ...gr
 // MessageBusServer is the server API for MessageBus service.
 type MessageBusServer interface {
 	NewMessage(context.Context, *Message) (*empty.Empty, error)
-	ProccessMessage(context.Context, *empty.Empty) (*Message, error)
-	ListMessages(*empty.Empty, MessageBus_ListMessagesServer) error
+	ProccessMessage(context.Context, *MessageRequest) (*Message, error)
+	ListMessages(*MessageRequest, MessageBus_ListMessagesServer) error
 	Join(context.Context, *JoinRequest) (*empty.Empty, error)
 }
 
@@ -246,10 +286,10 @@ type UnimplementedMessageBusServer struct {
 func (*UnimplementedMessageBusServer) NewMessage(ctx context.Context, req *Message) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NewMessage not implemented")
 }
-func (*UnimplementedMessageBusServer) ProccessMessage(ctx context.Context, req *empty.Empty) (*Message, error) {
+func (*UnimplementedMessageBusServer) ProccessMessage(ctx context.Context, req *MessageRequest) (*Message, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProccessMessage not implemented")
 }
-func (*UnimplementedMessageBusServer) ListMessages(req *empty.Empty, srv MessageBus_ListMessagesServer) error {
+func (*UnimplementedMessageBusServer) ListMessages(req *MessageRequest, srv MessageBus_ListMessagesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ListMessages not implemented")
 }
 func (*UnimplementedMessageBusServer) Join(ctx context.Context, req *JoinRequest) (*empty.Empty, error) {
@@ -279,7 +319,7 @@ func _MessageBus_NewMessage_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 func _MessageBus_ProccessMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(empty.Empty)
+	in := new(MessageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -291,13 +331,13 @@ func _MessageBus_ProccessMessage_Handler(srv interface{}, ctx context.Context, d
 		FullMethod: "/MessageBus/ProccessMessage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MessageBusServer).ProccessMessage(ctx, req.(*empty.Empty))
+		return srv.(MessageBusServer).ProccessMessage(ctx, req.(*MessageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _MessageBus_ListMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(empty.Empty)
+	m := new(MessageRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}

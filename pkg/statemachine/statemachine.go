@@ -15,12 +15,12 @@
 package statemachine
 
 import (
+	"bytes"
 	"encoding/binary"
-	"encoding/json"
+	"encoding/gob"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"github.com/lni/dragonboat/v3/logger"
 	sm "github.com/lni/dragonboat/v3/statemachine"
@@ -41,13 +41,13 @@ var recvProccessCount = prometheus.NewCounterVec(
 	},
 	[]string{"name"})
 
-var queueMessageCount = prometheus.NewGauge(
+var queueMessageCount = prometheus.NewGaugeVec(
 	prometheus.GaugeOpts{
 		Name: "message_queue_count",
-	})
+	},
+	[]string{"topic"})
 
 type Message struct {
-	Topic string
 	Event string
 }
 
@@ -59,25 +59,22 @@ type StateMachine struct {
 	ClusterID uint64
 	NodeID    uint64
 	Count     uint64
-	queue     *queue.Queue
+	queue     map[string]*queue.Queue
 }
 
 type Cmd struct {
-	Op      string `json:"op"`
+	Op      string   `json:"op"`
+	Topic   string   `json:"topic"`
 	Message *Message `json:"message"`
 }
 
 // NewStateMachine creates and return a new StateMachine object.
 func NewStateMachine(clusterID uint64, nodeID uint64) sm.IStateMachine {
-	queue, err := queue.NewQueue("internal-queue", nil)
-	if err != nil {
-		log.Fatalf("error creating statemachine: %s", err)
-	}
 	return &StateMachine{
 		ClusterID: clusterID,
 		NodeID:    nodeID,
 		Count:     0,
-		queue:     queue,
+		queue:     map[string]*queue.Queue{},
 	}
 }
 
@@ -85,51 +82,70 @@ func NewStateMachine(clusterID uint64, nodeID uint64) sm.IStateMachine {
 // we always return the Count value as a little endian binary encoded byte
 // slice.
 func (s *StateMachine) Lookup(query interface{}) (interface{}, error) {
-	return s.queue.ListItems(), nil
+	if s.queue[query.(string)] == nil {
+		return nil, fmt.Errorf("no such queue")
+	}
+	return s.queue[query.(string)], nil
 }
 
 // Update updates the object using the specified committed raft entry.
-func (s *StateMachine) Update(data []byte) (sm.Result, error) {
-	// in this example, we print out the following message for each
-	// incoming update request. we also increase the counter by one to remember
-	// how many updates we have applied
+func (s *StateMachine) Update(data []byte) (res sm.Result, err error) {
 	var command Cmd
-	if err := json.Unmarshal(data, &command); err != nil {
+	var opBytes bytes.Buffer
+	opBytes.Write(data)
+	dec := gob.NewDecoder(&opBytes)
+	if err := dec.Decode(&command); err != nil {
 		logger.GetLogger("rsm").Errorf("err marshalling Json: %s", err)
-		return sm.Result{}, nil
 	}
 
 	switch command.Op {
 	case ADD:
-		s.queue.InsertItem(command.Message)
-		queueMessageCount.Inc()
+		// Check if queue exists and create if not
+		if s.queue[command.Topic] == nil {
+			s.queue[command.Topic], err = queue.NewQueue(command.Topic, nil)
+			if err != nil {
+				return sm.Result{
+					Value: 0,
+					Data:  []byte(fmt.Sprintf("err creating topic: %s", err)),
+				}, nil
+			}
+		}
+		s.queue[command.Topic].InsertItem(command.Message)
+		queueMessageCount.WithLabelValues(command.Topic).Inc()
 		recvProccessCount.WithLabelValues(fmt.Sprintf("raft-%d-node-%d", s.ClusterID, s.NodeID)).Inc()
 		return sm.Result{
 			Value: uint64(len(command.Message.Event)),
-			Data: []byte(fmt.Sprintf("Message Written: %s", command.Message.Event)),
+			Data:  []byte(fmt.Sprintf("Message Written: %s", command.Message.Event)),
 		}, nil
 	case POP:
-		message, err := s.queue.Pop()
-		queueMessageCount.Dec()
+		if s.queue[command.Topic] == nil {
+			return sm.Result{
+				Value: 0,
+				Data:  []byte(fmt.Sprintf("err no such topic")),
+			}, nil
+		}
+		message, err := s.queue[command.Topic].Pop()
 		if err != nil {
 			return sm.Result{
-				Value: -1,
+				Value: 0,
 				Data:  []byte(fmt.Sprintf("err popping off message: %s", err)),
 			}, nil
 		}
-		msg := message.(Message).Event
+		queueMessageCount.WithLabelValues(command.Topic).Dec()
+		msg := message.(*Message).Event
 		return sm.Result{
 			Value: uint64(len(msg)),
 			Data:  []byte(msg),
 		}, nil
 	default:
 		return sm.Result{
-			Value: -1,
+			Value: 0,
 			Data:  []byte(fmt.Sprintf("cmd not known: %s", command.Op)),
 		}, nil
 	}
 }
 
+// TODO snapshot stuff
 // SaveSnapshot saves the current IStateMachine state into a snapshot using the
 // specified io.Writer object.
 func (s *StateMachine) SaveSnapshot(w io.Writer,
