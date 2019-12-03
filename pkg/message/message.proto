@@ -1,0 +1,21 @@
+
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+service MessageBus {
+    rpc NewMessage (Message) returns (google.protobuf.Empty) {}
+    rpc ProccessMessage (google.protobuf.Empty) returns (Message) {}
+    rpc ListMessages(google.protobuf.Empty) returns (stream Message) {}
+    rpc Join(JoinRequest) returns (google.protobuf.Empty) {}
+}
+   
+  message Message {
+    string event = 1;
+    string topic = 2;
+  }
+
+  message JoinRequest {
+    string raftAddr = 2;
+    string nodeID = 3;
+  }

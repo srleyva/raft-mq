@@ -1,25 +1,22 @@
 package main
 
 import (
-	"bufio"
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/buraksezer/consistent"
-	"github.com/cespare/xxhash"
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
-	"github.com/lni/goutils/syncutil"
 
 	"github.com/srleyva/raft-group-mq/pkg/statemachine"
+	"github.com/srleyva/raft-group-mq/pkg/server"
 )
 
 // Default Ports
@@ -105,85 +102,18 @@ func main() {
 			fmt.Fprintf(os.Stderr, "failed to add cluster, %v\n", err)
 			os.Exit(1)
 		}
-		clusters = append(clusters, ClusterID(clusterID))
+		clusters = append(clusters, server.ClusterID(clusterID))
 		clusterID++
 	}
 
-	raftStopper := syncutil.NewStopper()
-	consoleStopper := syncutil.NewStopper()
-	ch := make(chan string, 16)
-	consoleStopper.RunWorker(func() {
-		reader := bufio.NewReader(os.Stdin)
-		for {
-			s, err := reader.ReadString('\n')
-			if err != nil {
-				close(ch)
-				return
-			}
-			if s == "exit\n" {
-				raftStopper.Stop()
-				// no data will be lost/corrupted if nodehost.Stop() is not called
-				nodeHost.Stop()
-				return
-			}
-			ch <- s
-		}
-	})
+	server := server.NewServer(nodeAddr, clusters, nodeHost)
+	if err := server.Start(); err != nil {
+		log.Fatalf("failed to start GRPC service: %s", err.Error())
+	}
 
-	raftStopper.RunWorker(func() {
-		// use NO-OP client session here
-		// check the example in godoc to see how to use a regular client session
-		ringConfig := consistent.Config{
-			PartitionCount:    7,
-			ReplicationFactor: 20,
-			Load:              1.25,
-			Hasher:            hasher{},
-		}
-		clusterRing := consistent.New(clusters, ringConfig)
-
-		for {
-			select {
-			case v, ok := <-ch:
-				if !ok {
-					return
-				}
-				ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-				// remove the \n char
-				msg := strings.Replace(strings.TrimSpace(v), "\n", "", 1)
-				key := []byte(msg)
-				clusterSession := nodeHost.GetNoOPSession(clusterRing.LocateKey(key).(ClusterID).Uint64())
-
-				_, err := nodeHost.SyncPropose(ctx, clusterSession, key)
-
-				cancel()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "SyncPropose returned error %v\n", err)
-				}
-			case <-raftStopper.ShouldStop():
-				return
-			}
-		}
-	})
-	raftStopper.Wait()
-}
-
-type ClusterID uint64
-
-func (c ClusterID) Uint64() uint64 {
-	return uint64(c)
-}
-
-func (c ClusterID) String() string {
-	return fmt.Sprintf("%d", c)
-}
-
-// consistent package doesn't provide a default hashing function.
-// You should provide a proper one to distribute keys/members uniformly.
-type hasher struct{}
-
-func (h hasher) Sum64(data []byte) uint64 {
-	// you should use a proper hash function for uniformity.
-	return xxhash.Sum64(data)
+	terminate := make(chan os.Signal, 1)
+	signal.Notify(terminate, os.Interrupt)
+	<-terminate
 }
 
 func configureFlags() {
