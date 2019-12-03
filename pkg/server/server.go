@@ -48,9 +48,9 @@ func (h hasher) Sum64(data []byte) uint64 {
 
 func NewServer(addr string, clusters []consistent.Member, nodehost *dragonboat.NodeHost) *Server {
 	ringConfig := consistent.Config{
-		PartitionCount:    7,
-		ReplicationFactor: 20,
-		Load:              1.25,
+		PartitionCount:    181,
+		ReplicationFactor: 8,
+		Load:              1.2,
 		Hasher:            hasher{},
 	}
 	clusterRing := consistent.New(clusters, ringConfig)

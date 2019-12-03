@@ -14,6 +14,7 @@ require (
 	github.com/cespare/xxhash v1.1.0
 	github.com/cockroachdb/pebble v0.0.0-20191126181905-c3a0c4720a96 // indirect
 	github.com/golang/protobuf v1.3.2
+	github.com/gorilla/mux v1.7.3
 	github.com/lni/dragonboat v2.1.7+incompatible // indirect
 	github.com/lni/dragonboat/v3 v3.1.4
 	github.com/lni/goutils v1.0.3

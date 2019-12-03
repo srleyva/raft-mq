@@ -41,11 +41,15 @@ var recvProccessCount = prometheus.NewCounterVec(
 	},
 	[]string{"name"})
 
-var queueMessageCount = prometheus.NewGaugeVec(
+var queueMessageCount = prometheus.NewGauge(
 	prometheus.GaugeOpts{
 		Name: "message_queue_count",
-	},
-	[]string{"topic"})
+	})
+
+func init() {
+	prometheus.MustRegister(recvProccessCount)
+	prometheus.MustRegister(queueMessageCount)
+}
 
 type Message struct {
 	Event string
@@ -111,8 +115,8 @@ func (s *StateMachine) Update(data []byte) (res sm.Result, err error) {
 			}
 		}
 		s.queue[command.Topic].InsertItem(command.Message)
-		queueMessageCount.WithLabelValues(command.Topic).Inc()
-		recvProccessCount.WithLabelValues(fmt.Sprintf("raft-%d-node-%d", s.ClusterID, s.NodeID)).Inc()
+		queueMessageCount.Inc()
+		recvProccessCount.WithLabelValues(fmt.Sprintf("raft-%d", s.ClusterID)).Inc()
 		return sm.Result{
 			Value: uint64(len(command.Message.Event)),
 			Data:  []byte(fmt.Sprintf("Message Written: %s", command.Message.Event)),
@@ -131,7 +135,7 @@ func (s *StateMachine) Update(data []byte) (res sm.Result, err error) {
 				Data:  []byte(fmt.Sprintf("err popping off message: %s", err)),
 			}, nil
 		}
-		queueMessageCount.WithLabelValues(command.Topic).Dec()
+		queueMessageCount.Dec()
 		msg := message.(*Message).Event
 		return sm.Result{
 			Value: uint64(len(msg)),
