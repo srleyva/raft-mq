@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -11,9 +13,11 @@ import (
 	"syscall"
 
 	"github.com/buraksezer/consistent"
+	"github.com/gorilla/mux"
 	"github.com/lni/dragonboat/v3"
 	"github.com/lni/dragonboat/v3/config"
 	"github.com/lni/dragonboat/v3/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/srleyva/raft-group-mq/pkg/server"
 	"github.com/srleyva/raft-group-mq/pkg/statemachine"
@@ -112,6 +116,15 @@ func main() {
 	if err := server.Start(); err != nil {
 		log.Fatalf("failed to start GRPC service: %s", err.Error())
 	}
+	go func() {
+		mux := mux.NewRouter()
+		AttachProfiler(mux)
+		httpAddr := fmt.Sprintf("%s:%d", addr, port+2)
+		if err := http.ListenAndServe(httpAddr, mux); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("HTTP Server is running on %s", httpAddr)
+	}()
 
 	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)
@@ -131,4 +144,18 @@ func configureFlags() {
 	flag.Parse()
 	nodes = strings.Split(strNodes, ",")
 
+}
+
+func AttachProfiler(router *mux.Router) {
+	router.Handle("/metrics", promhttp.Handler())
+	router.HandleFunc("/debug/pprof/", pprof.Index)
+	router.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	router.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+
+	// Manually add support for paths linked to by index page at /debug/pprof/
+	router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	router.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	router.Handle("/debug/pprof/block", pprof.Handler("block"))
 }
